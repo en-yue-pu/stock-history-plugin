@@ -28,11 +28,11 @@ async def get_crypto():
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     
-@app.get("/logo.png")#响应读取logo的请求
+@app.get("/logo.jpg")#响应读取logo的请求
 async def plugin_logo():
-    filename = 'logo.png'
+    filename = 'logo.jpg'
     try:
-        return await quart.send_file(filename, mimetype='image/png')
+        return await quart.send_file(filename, mimetype='image/jpg')
     except FileNotFoundError:
         return jsonify({"error": f"文件'{filename}'不存在"}), 404
 
