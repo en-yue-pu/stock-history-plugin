@@ -7,18 +7,18 @@ from httpx import AsyncClient
 
 app = quart.Quart(__name__)
 quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt官方domin的访问
-    
-@app.route("/crypto", methods=['GET'])
-async def get_crypto():
-    url = 'https://sandbox-api.coinmarketcap.com/v1/cryptocurrency/listings/latest'
+
+@app.route("/stock_data", methods=['GET'])
+async def get_stock_data():
+    url = 'https://api.polygon.io/v2/aggs/ticker/AAPL/range/1/day/2021-06-21/2023-06-20'
     parameters = {
-      'start':'1',
-      'limit':'5000',
-      'convert':'USD'
+      'adjusted': 'true',
+      'sort': 'asc',
+      'limit': '50000'
     }
     headers = {
       'Accepts': 'application/json',
-      'X-CMC_PRO_API_KEY': '7f349407-9973-4ed9-946a-64d04e1467fb',
+      'apiKey': 'KP0SneaAKULS4g4SO9l5uTTxwzdFg9xz',
     }
     try:
         async with AsyncClient() as client:
@@ -27,7 +27,7 @@ async def get_crypto():
             return quart.Response(response=json.dumps(data), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
-    
+ 
 @app.get("/logo.jpg")#响应读取logo的请求
 async def plugin_logo():
     filename = 'logo.jpg'
