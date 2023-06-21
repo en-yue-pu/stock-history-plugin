@@ -1,0 +1,42 @@
+openapi: 3.0.1
+info:
+  title: Crypto Listings Plugin
+  description: A plugin that allows the user to get latest cryptocurrency listings. The API provides information about 5000 cryptocurrencies, converted to USD.
+  version: 'v1'
+servers:
+  - url: https://e4446c7d6cab.ngrok.app
+paths:
+  /crypto:
+    get:
+      operationId: getCrypto
+      summary: Get the latest cryptocurrency listings
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/getCryptoResponse'
+components:
+  schemas:
+    getCryptoResponse:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            type: object
+            properties:
+              name:
+                type: string
+                description: The name of the cryptocurrency.
+              quote:
+                type: object
+                properties:
+                  USD:
+                    type: object
+                    properties:
+                      price:
+                        type: number
+                        description: The current price of the cryptocurrency in USD.
+            description: The list of cryptocurrencies.
