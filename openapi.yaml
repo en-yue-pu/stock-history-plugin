@@ -1,42 +1,97 @@
 openapi: 3.0.1
 info:
-  title: Crypto Listings Plugin
-  description: A plugin that allows the user to get latest cryptocurrency listings. The API provides information about 5000 cryptocurrencies, converted to USD.
+  title: Stock Aggregate Plugin
+  description: A plugin that allows the user to get stock aggregate. The API provides information about stocks, in specific time windows. Get aggregate bars for a stock over a given date range in custom time window sizes.
   version: 'v1'
 servers:
-  - url: https://e4446c7d6cab.ngrok.app
+  - url: https://2f70691e3ccc.ngrok.app
 paths:
-  /crypto:
+  /stocks:
     get:
-      operationId: getCrypto
-      summary: Get the latest cryptocurrency listings
+      operationId: getStocks
+      summary: Get stock aggregate
+      parameters:
+        - name: stocksTicker
+          in: query
+          description: The ticker symbol of the stock/equity.
+          required: true
+          schema:
+            type: string
+        - name: multiplier
+          in: query
+          description: The size of the timespan multiplier.
+          required: true
+          schema:
+            type: string
+        - name: timespan
+          in: query
+          description: The size of the time window.
+          required: true
+          schema:
+            type: string
+        - name: from
+          in: query
+          description: The start of the aggregate time window.
+          required: true
+          schema:
+            type: string
+        - name: to
+          in: query
+          description: The end of the aggregate time window.
+          required: true
+          schema:
+            type: string
+        - name: adjusted
+          in: query
+          description: Whether or not the results are adjusted for splits.
+          required: false
+          schema:
+            type: boolean
+        - name: sort
+          in: query
+          description: Sort the results by timestamp.
+          required: false
+          schema:
+            type: string
+        - name: limit
+          in: query
+          description: Limits the number of base aggregates queried.
+          required: false
+          schema:
+            type: integer
       responses:
         "200":
           description: OK
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/getCryptoResponse'
+                $ref: '#/components/schemas/getStocksResponse'
 components:
   schemas:
-    getCryptoResponse:
+    getStocksResponse:
       type: object
       properties:
-        data:
+        results:
           type: array
           items:
             type: object
             properties:
-              name:
-                type: string
-                description: The name of the cryptocurrency.
-              quote:
-                type: object
-                properties:
-                  USD:
-                    type: object
-                    properties:
-                      price:
-                        type: number
-                        description: The current price of the cryptocurrency in USD.
-            description: The list of cryptocurrencies.
+              t:
+                type: integer
+                description: The Unix millisecond timestamp for the start of the aggregate window.
+              o:
+                type: number
+                description: The first (oldest) trade price in the aggregate window.
+              h:
+                type: number
+                description: The highest trade price in the aggregate window.
+              l:
+                type: number
+                description: The lowest trade price in the aggregate window.
+              c:
+                type: number
+                description: The last (newest) trade price in the aggregate window.
+              v:
+                type: number
+                description: The total volume of trading activity in the aggregate window.
+            description: The list of stock aggregates.

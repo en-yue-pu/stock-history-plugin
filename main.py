@@ -7,27 +7,22 @@ from httpx import AsyncClient
 
 app = quart.Quart(__name__)
 quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt官方domin的访问
-
-@app.route("/stock_data", methods=['GET'])
-async def get_stock_data():
-    url = 'https://api.polygon.io/v2/aggs/ticker/AAPL/range/1/day/2021-06-21/2023-06-20'
-    parameters = {
-      'adjusted': 'true',
-      'sort': 'asc',
-      'limit': '50000'
-    }
-    headers = {
-      'Accepts': 'application/json',
-      'apiKey': 'KP0SneaAKULS4g4SO9l5uTTxwzdFg9xz',
-    }
+    
+@app.route("/stocks", methods=['GET'])
+async def get_stocks():
+    ticker = request.args.get('ticker', default='AAPL', type=str)# 股票代码
+    from_date = request.args.get('from_date', default='2021-06-21', type=str)#时间范围开始日期
+    to_date = request.args.get('to_date', default='2023-06-20', type=str)#时间范围结束日期
+    timespan = request.args.get('timespan', default='day', type=str)#时间跨度
+    url = f'https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/{timespan}/{from_date}/{to_date}?adjusted=true&sort=asc&limit=50000&apiKey=KP0SneaAKULS4g4SO9l5uTTxwzdFg9xz'
     try:
         async with AsyncClient() as client:
-            response = await client.get(url, params=parameters, headers=headers)
+            response = await client.get(url)
             data = response.json()
             return quart.Response(response=json.dumps(data), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
- 
+    
 @app.get("/logo.jpg")#响应读取logo的请求
 async def plugin_logo():
     filename = 'logo.jpg'

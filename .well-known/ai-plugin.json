@@ -1,17 +1,17 @@
 {
   "schema_version": "v1",
-  "name_for_human": "Cryptocurrency Listings",
-  "name_for_model": "cryptoListings",
-  "description_for_human": "Get latest cryptocurrency listings",
-  "description_for_model": "Get latest cryptocurrency listings",
+  "name_for_human": "Stock Data",
+  "name_for_model": "stockData",
+  "description_for_human": "Get aggregate data for a specific stock",
+  "description_for_model": "Get aggregate data for a specific stock",
   "auth": {
       "type": "none"
   },
   "api": {
       "type": "openapi",
-      "url": "https://e4446c7d6cab.ngrok.app/openapi.yaml"
+      "url": "https://2f70691e3ccc.ngrok.app/openapi.yaml"
   },
-  "logo_url": "https://e4446c7d6cab.ngrok.app/logo.jpg",
+  "logo_url": "https://2f70691e3ccc.ngrok.app/logo.jpg",
   "contact_email": "legal@example.com",
   "legal_info_url": "http://example.com/legal"
 }
