@@ -10,11 +10,15 @@ quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt�
     
 @app.route("/stocks", methods=['GET'])
 async def get_stocks():
-    ticker = request.args.get('ticker', default='AAPL', type=str)# 股票代码
-    from_date = request.args.get('from_date', default='2021-06-21', type=str)#时间范围开始日期
-    to_date = request.args.get('to_date', default='2023-06-20', type=str)#时间范围结束日期
-    timespan = request.args.get('timespan', default='day', type=str)#时间跨度
-    url = f'https://api.polygon.io/v2/aggs/ticker/{ticker}/range/1/{timespan}/{from_date}/{to_date}?adjusted=true&sort=asc&limit=50000&apiKey=KP0SneaAKULS4g4SO9l5uTTxwzdFg9xz'
+    ticker = request.args.get('stocksTicker', default='AAPL', type=str) # 股票代码
+    from_date = request.args.get('from', default='2021-06-21', type=str) #时间范围开始日期
+    to_date = request.args.get('to', default='2023-06-20', type=str) #时间范围结束日期
+    multiplier = request.args.get('multiplier', default='1', type=str)
+    timespan = request.args.get('timespan', default='day', type=str) #时间跨度
+    sort_order = request.args.get('sort', default='asc', type=str) #结果是升序还是降序
+    adjusted = request.args.get('adjusted', default='true', type=str) #结果是否调整了股票拆分
+    limit = request.args.get('limit', default=50000, type=int) #查询的基础聚合的数量限制
+    url = f'https://api.polygon.io/v2/aggs/ticker/{ticker}/range/{multiplier}/{timespan}/{from_date}/{to_date}?adjusted={adjusted}&sort={sort_order}&limit={limit}&apiKey=KP0SneaAKULS4g4SO9l5uTTxwzdFg9xz'
     try:
         async with AsyncClient() as client:
             response = await client.get(url)
