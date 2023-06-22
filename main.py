@@ -13,7 +13,7 @@ async def get_stocks():
     ticker = request.args.get('stocksTicker', default='AAPL', type=str) # 股票代码
     from_date = request.args.get('from', default='2021-06-21', type=str) #时间范围开始日期
     to_date = request.args.get('to', default='2023-06-20', type=str) #时间范围结束日期
-    multiplier = request.args.get('multiplier', default='1', type=str)
+    multiplier = request.args.get('multiplier', default='1', type=str)#和timespan配合,表示timespan之前的乘数比如说2day
     timespan = request.args.get('timespan', default='day', type=str) #时间跨度
     sort_order = request.args.get('sort', default='asc', type=str) #结果是升序还是降序
     adjusted = request.args.get('adjusted', default='true', type=str) #结果是否调整了股票拆分
