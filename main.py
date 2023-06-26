@@ -2,12 +2,17 @@ import json
 import requests
 import quart
 import quart_cors
-from quart import jsonify, request
+from quart import jsonify, request, g
 from httpx import AsyncClient
+import pandas as pd
+from sklearn.linear_model import LinearRegression
 
 app = quart.Quart(__name__)
 quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt官方domin的访问
     
+# 定义全局变量 临时保存数据
+g.stock_data = None
+
 @app.route("/stocks", methods=['GET'])
 async def get_stocks():
     ticker = request.args.get('stocksTicker', default='AAPL', type=str) # 股票代码
@@ -23,7 +28,31 @@ async def get_stocks():
         async with AsyncClient() as client:
             response = await client.get(url)
             data = response.json()
+            g.stock_data = data  # 保存股票数据到全局变量
             return quart.Response(response=json.dumps(data), status=200)
+    except Exception as e:
+        return quart.Response(response=json.dumps({"error": str(e)}), status=400)
+
+@app.route("/predict", methods=['POST'])
+async def predict_stock_price():
+    try:
+        data = await request.get_json()
+        prediction_data = data['prediction_data']
+
+        if g.stock_data is None:
+            return quart.Response(response=json.dumps({"error": "Stock data is not available"}), status=400)
+
+        # 将股票数据转换为DataFrame
+        df = pd.DataFrame(g.stock_data)
+
+        # 创建并训练线性回归模型
+        model = LinearRegression()
+        model.fit(df[['Close']], df['Prediction'])
+
+        # 进行预测
+        prediction = model.predict([prediction_data['Close']])
+
+        return quart.Response(response=json.dumps({'prediction': prediction}), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     

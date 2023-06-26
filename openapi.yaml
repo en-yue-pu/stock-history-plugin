@@ -66,6 +66,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/getStocksResponse'
+  /predict:
+    post:
+      operationId: predictStockPrice
+      summary: Predict stock price
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/predictionRequestBody'
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/predictionResponseBody'
 components:
   schemas:
     getStocksResponse:
@@ -95,3 +112,23 @@ components:
                 type: number
                 description: The total volume of trading activity in the aggregate window.
             description: The list of stock aggregates.
+    predictionRequestBody:
+      type: object
+      properties:
+        stock_data:
+          type: array
+          items:
+            $ref: '#/components/schemas/getStocksResponse'
+        prediction_data:
+          type: object
+          properties:
+            Close:
+              type: number
+      required:
+        - stock_data
+        - prediction_data
+    predictionResponseBody:
+      type: object
+      properties:
+        prediction:
+          type: number
