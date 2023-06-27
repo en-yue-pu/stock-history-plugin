@@ -59,10 +59,9 @@ async def predict_stock_price():
         global previous_data
         
         if previous_data is None:
-            return quart.Response(response=json.dumps({"error": "No data available"}), status=400)
-
+            return quart.Response(response=json.dumps({"error": "请先取得数据"}), status=400)
         # 获取请求参数中的数据类型
-        data_type = request.json.get('data_type', 'close_prices')#默认值收盘价
+        data_type = (await request.json).get('data_type', 'close_prices')#默认值收盘价
         if data_type not in previous_data:
             return quart.Response(response=json.dumps({"error": "Invalid data type"}), status=400)
 
@@ -125,7 +124,7 @@ async def predict_stock_price():
         y_pred = scaler.inverse_transform(y_pred)
         y_test = scaler.inverse_transform(y_test.reshape(-1, 1))
 
-        return quartResponse(response=json.dumps({'prediction': y_pred.tolist(), 'actual': y_test.tolist()}), status=200)
+        return quart.Response(response=json.dumps({'prediction': y_pred.tolist(), 'actual': y_test.tolist()}), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     
