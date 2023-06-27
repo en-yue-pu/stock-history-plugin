@@ -2,3 +2,9 @@ quart
 quart-cors
 requests
 httpx
+pandas
+scikit-learn
+numpy
+matplotlib
+keras
+tensorflow

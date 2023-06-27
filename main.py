@@ -1,17 +1,17 @@
 import json
-import requests
 import quart
 import quart_cors
-from quart import jsonify, request, g
 from httpx import AsyncClient
+from quart import jsonify, request
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, Dropout
+import matplotlib.pyplot as plt
 
 app = quart.Quart(__name__)
 quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt官方domin的访问
-    
-# 定义全局变量 临时保存数据
-g.stock_data = None
 
 @app.route("/stocks", methods=['GET'])
 async def get_stocks():
@@ -28,7 +28,6 @@ async def get_stocks():
         async with AsyncClient() as client:
             response = await client.get(url)
             data = response.json()
-            g.stock_data = data  # 保存股票数据到全局变量
             return quart.Response(response=json.dumps(data), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
@@ -37,22 +36,45 @@ async def get_stocks():
 async def predict_stock_price():
     try:
         data = await request.get_json()
-        prediction_data = data['prediction_data']
+        feature_data = data['feature_data']
+        target_data = data['target_data']
 
-        if g.stock_data is None:
-            return quart.Response(response=json.dumps({"error": "Stock data is not available"}), status=400)
+        df = pd.DataFrame({'Close': feature_data, 'Prediction': target_data})
 
-        # 将股票数据转换为DataFrame
-        df = pd.DataFrame(g.stock_data)
+        scaler = MinMaxScaler()
+        df['Close'] = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
+        df['Prediction'] = scaler.transform(df['Prediction'].values.reshape(-1, 1))
 
-        # 创建并训练线性回归模型
-        model = LinearRegression()
-        model.fit(df[['Close']], df['Prediction'])
+        n = 60
+        x_test = np.array(df['Close'][-n:]).reshape(1, -1)
+        y_test = np.array(df['Prediction'][-n:]).reshape(1, -1)
 
-        # 进行预测
-        prediction = model.predict([prediction_data['Close']])
+        x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], 1)
 
-        return quart.Response(response=json.dumps({'prediction': prediction}), status=200)
+        model = Sequential()
+        model.add(LSTM(50, return_sequences=True, input_shape=(n, 1)))
+        model.add(Dropout(0.2))
+        model.add(LSTM(50, return_sequences=True))
+        model.add(Dropout(0.2))
+        model.add(LSTM(50))
+        model.add(Dropout(0.2))
+        model.add(Dense(1))
+
+        model.compile(loss='mean_squared_error', optimizer='adam')
+
+        x_train = np.array(df['Close'][:-n]).reshape(1, -1)
+        y_train = np.array(df['Prediction'][:-n]).reshape(1, -1)
+
+        x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
+
+        model.fit(x_train, y_train, epochs=20, batch_size=30)
+
+        y_pred = model.predict(x_test)
+
+        prediction = scaler.inverse_transform(y_pred)
+        actual = scaler.inverse_transform(y_test)
+
+        return quart.Response(response=json.dumps({'prediction': prediction.tolist(), 'actual': actual.tolist()}), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     
@@ -62,7 +84,7 @@ async def plugin_logo():
     try:
         return await quart.send_file(filename, mimetype='image/jpg')
     except FileNotFoundError:
-        return jsonify({"error": f"文件'{filename}'不存在"}), 404
+        return jsonify({"error": f"File '{filename}' not found"}), 404
 
 @app.get("/.well-known/ai-plugin.json")#响应读取manifest文件的请求
 async def plugin_manifest():
@@ -84,7 +106,7 @@ async def openapi_spec():
             text = f.read()
             return quart.Response(text, mimetype="text/yaml")
     except FileNotFoundError:
-        return jsonify({"error": f"文件'{filename}'不存在"}), 404
+        return jsonify({"error": f"File '{filename}' not found"}), 404
 
 def main():
     app.run(debug=True, host="0.0.0.0", port=5003)#启动服务

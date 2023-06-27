@@ -4,7 +4,7 @@ info:
   description: A plugin that allows the user to get stock aggregate. The API provides information about stocks, in specific time windows. Get aggregate bars for a stock over a given date range in custom time window sizes.
   version: 'v1'
 servers:
-  - url: https://2f70691e3ccc.ngrok.app
+  - url: https://9ef41439789c.ngrok.app
 paths:
   /stocks:
     get:
@@ -66,23 +66,6 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/getStocksResponse'
-  /predict:
-    post:
-      operationId: predictStockPrice
-      summary: Predict stock price
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/predictionRequestBody'
-      responses:
-        "200":
-          description: OK
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/predictionResponseBody'
 components:
   schemas:
     getStocksResponse:
@@ -112,23 +95,3 @@ components:
                 type: number
                 description: The total volume of trading activity in the aggregate window.
             description: The list of stock aggregates.
-    predictionRequestBody:
-      type: object
-      properties:
-        stock_data:
-          type: array
-          items:
-            $ref: '#/components/schemas/getStocksResponse'
-        prediction_data:
-          type: object
-          properties:
-            Close:
-              type: number
-      required:
-        - stock_data
-        - prediction_data
-    predictionResponseBody:
-      type: object
-      properties:
-        prediction:
-          type: number

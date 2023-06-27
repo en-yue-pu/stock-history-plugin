@@ -9,9 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://2f70691e3ccc.ngrok.app/openapi.yaml"
+    "url": "https://9ef41439789c.ngrok.app/openapi.yaml"
   },
-  "logo_url": "https://2f70691e3ccc.ngrok.app/logo.jpg",
+  "logo_url": "https://9ef41439789c.ngrok.app/logo.jpg",
   "contact_email": "legal@example.com",
   "legal_info_url": "http://example.com/legal",
   "endpoints": [
