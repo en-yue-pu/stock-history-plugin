@@ -9,9 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://9ef41439789c.ngrok.app/openapi.yaml"
+    "url": "https://04917c44cbe3.ngrok.app/openapi.yaml"
   },
-  "logo_url": "https://9ef41439789c.ngrok.app/logo.jpg",
+  "logo_url": "https://04917c44cbe3.ngrok.app/logo.jpg",
   "contact_email": "legal@example.com",
   "legal_info_url": "http://example.com/legal",
   "endpoints": [
@@ -19,17 +19,122 @@
       "name": "Get Stock Aggregate",
       "route": "/stocks",
       "description": "Get stock aggregate data",
-      "methods": [
-        "GET"
+      "methods": ["GET"],
+      "parameters": [
+        {
+          "name": "stocksTicker",
+          "description": "The ticker symbol of the stock/equity",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "multiplier",
+          "description": "The size of the timespan multiplier",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "timespan",
+          "description": "The size of the time window",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "from",
+          "description": "The start of the aggregate time window",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "to",
+          "description": "The end of the aggregate time window",
+          "required": true,
+          "type": "string"
+        },
+        {
+          "name": "adjusted",
+          "description": "Whether or not the results are adjusted for splits",
+          "required": false,
+          "type": "boolean"
+        },
+        {
+          "name": "sort",
+          "description": "Sort the results by timestamp",
+          "required": false,
+          "type": "string"
+        },
+        {
+          "name": "limit",
+          "description": "Limits the number of base aggregates queried",
+          "required": false,
+          "type": "integer"
+        }
       ]
     },
     {
       "name": "Predict Stock Price",
       "route": "/predict",
       "description": "Predict stock price",
-      "methods": [
-        "POST"
-      ]
+      "methods": ["POST"],
+      "request_body": {
+        "required": true,
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/predictStockPriceRequest"
+            }
+          }
+        }
+      },
+      "responses": {
+        "200": {
+          "description": "OK",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/predictStockPriceResponse"
+              }
+            }
+          }
+        }
+      }
     }
-  ]
+  ],
+  "components": {
+    "schemas": {
+      "predictStockPriceRequest": {
+        "type": "object",
+        "properties": {
+          "data": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "The feature data for stock price prediction"
+          }
+        },
+        "required": ["data"]
+      },
+      "predictStockPriceResponse": {
+        "type": "object",
+        "properties": {
+          "prediction": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "The predicted stock prices"
+          },
+          "actual": {
+            "type": "array",
+            "items": {
+              "type": "number"
+            },
+            "description": "The actual stock prices"
+          }
+        },
+        "required": ["prediction", "actual"]
+      }
+    }
+  }
 }

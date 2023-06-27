@@ -35,22 +35,46 @@ async def get_stocks():
 @app.route("/predict", methods=['POST'])
 async def predict_stock_price():
     try:
-        data = await request.get_json()
-        feature_data = data['feature_data']
-        target_data = data['target_data']
-
-        df = pd.DataFrame({'Close': feature_data, 'Prediction': target_data})
-
+        data = await request.get_json() # 从请求中获取JSON数据，并使用await关键字等待获取完整的JSON数据。
+        feature_data = data['data'] # 从JSON数据中提取特征数据，假设特征数据的键为'data'。
+        
+        # 将特征数据转换为DataFrame
+        df = pd.DataFrame({'feature': feature_data})
+        
+        # 将数据转换为 numpy 数组
+        data = df['feature'].values
+        # 定义训练集和测试集的大小
+        train_size = int(len(data) * 0.8)
+        test_size = len(data) - train_size
+        # 分割训练集和测试集
+        train_data = data[:train_size]
+        test_data = data[test_size:]
+        
         scaler = MinMaxScaler()
-        df['Close'] = scaler.fit_transform(df['Close'].values.reshape(-1, 1))
-        df['Prediction'] = scaler.transform(df['Prediction'].values.reshape(-1, 1))
+        # 对训练集进行归一化
+        train_data = scaler.fit_transform(train_data.reshape(-1, 1))
+        # 对测试集进行归一化
+        test_data = scaler.transform(test_data.reshape(-1, 1))
 
-        n = 60
-        x_test = np.array(df['Close'][-n:]).reshape(1, -1)
-        y_test = np.array(df['Prediction'][-n:]).reshape(1, -1)
-
+        # 定义一个函数，根据过去 n 天的数据来生成输入和输出
+        def create_dataset(data, n):
+            x = []
+            y = []
+            for i in range(n, len(data)):
+                x.append(data[i-n:i, 0])
+                y.append(data[i, 0])
+            return np.array(x), np.array(y)
+        
+        n = 60 # 过去天数为 60
+        
+        # 创建训练集和测试集的输入和输出
+        x_train, y_train = create_dataset(train_data, n)
+        x_test, y_test = create_dataset(test_data, n)
+        
+        # 调整输入的形状，以适应 LSTM 模型
+        x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
         x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], 1)
-
+        
         model = Sequential()
         model.add(LSTM(50, return_sequences=True, input_shape=(n, 1)))
         model.add(Dropout(0.2))
@@ -59,22 +83,18 @@ async def predict_stock_price():
         model.add(LSTM(50))
         model.add(Dropout(0.2))
         model.add(Dense(1))
-
+        
         model.compile(loss='mean_squared_error', optimizer='adam')
-
-        x_train = np.array(df['Close'][:-n]).reshape(1, -1)
-        y_train = np.array(df['Prediction'][:-n]).reshape(1, -1)
-
-        x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
-
+        
         model.fit(x_train, y_train, epochs=20, batch_size=30)
-
+        
         y_pred = model.predict(x_test)
-
-        prediction = scaler.inverse_transform(y_pred)
-        actual = scaler.inverse_transform(y_test)
-
-        return quart.Response(response=json.dumps({'prediction': prediction.tolist(), 'actual': actual.tolist()}), status=200)
+        
+        # 反归一化预测结果和真实结果
+        y_pred = scaler.inverse_transform(y_pred)
+        y_test = scaler.inverse_transform(y_test.reshape(-1, 1))
+        
+        return quart.Response(response=json.dumps({'prediction': y_pred.tolist(), 'actual': y_test.tolist()}), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     
@@ -109,7 +129,7 @@ async def openapi_spec():
         return jsonify({"error": f"File '{filename}' not found"}), 404
 
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5003)#启动服务
+    app.run(debug=True, host="0.0.0.0", port=5004)#启动服务
 
 if __name__ == "__main__":
     main()
