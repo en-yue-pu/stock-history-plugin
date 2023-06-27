@@ -16,6 +16,8 @@ pip install -r requirements.txt
 python main.py
 ngrok http 5003
 
+python 3.8
+
 .well-known/ai-plugin.json文件中，
 name_for_human 和 description_for_human 是给用户看的，
 name_for_model 和 description_for_model 是给模型看的。
