@@ -13,6 +13,8 @@ import matplotlib.pyplot as plt
 app = quart.Quart(__name__)
 quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt官方domin的访问
 
+previous_data = None  # 用于保存上一次的数据
+
 @app.route("/stocks", methods=['GET'])
 async def get_stocks():
     ticker = request.args.get('stocksTicker', default='AAPL', type=str) # 股票代码
@@ -28,6 +30,24 @@ async def get_stocks():
         async with AsyncClient() as client:
             response = await client.get(url)
             data = response.json()
+
+            # Extract each type of data into separate lists
+            open_prices = [result['o'] for result in data['results']]
+            close_prices = [result['c'] for result in data['results']]
+            high_prices = [result['h'] for result in data['results']]
+            low_prices = [result['l'] for result in data['results']]
+            volume_weighted_prices = [result['vm'] for result in data['results']]
+
+            global previous_data
+            # Save the data into a dictionary for future use
+            previous_data = {
+                'open_prices': open_prices,
+                'close_prices': close_prices,
+                'high_prices': high_prices,
+                'low_prices': low_prices,
+                'volume_weighted_prices': volume_weighted_prices,
+            }
+
             return quart.Response(response=json.dumps(data), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
@@ -35,9 +55,19 @@ async def get_stocks():
 @app.route("/predict", methods=['POST'])
 async def predict_stock_price():
     try:
-        data = await request.get_json() # 从请求中获取JSON数据，并使用await关键字等待获取完整的JSON数据。
-        feature_data = data['data'] # 从JSON数据中提取特征数据，假设特征数据的键为'data'。
+        global previous_data
         
+        if previous_data is None:
+            return quart.Response(response=json.dumps({"error": "No data available"}), status=400)
+
+        # 获取请求参数中的数据类型
+        data_type = request.json.get('data_type', 'close_prices')#默认值收盘价
+        if data_type not in previous_data:
+            return quart.Response(response=json.dumps({"error": "Invalid data type"}), status=400)
+
+        # 使用指定类型的数据进行预测
+        feature_data = previous_data[data_type]
+
         # 将特征数据转换为DataFrame
         df = pd.DataFrame({'feature': feature_data})
         
@@ -93,8 +123,8 @@ async def predict_stock_price():
         # 反归一化预测结果和真实结果
         y_pred = scaler.inverse_transform(y_pred)
         y_test = scaler.inverse_transform(y_test.reshape(-1, 1))
-        
-        return quart.Response(response=json.dumps({'prediction': y_pred.tolist(), 'actual': y_test.tolist()}), status=200)
+
+        return quartResponse(response=json.dumps({'prediction': y_pred.tolist(), 'actual': y_test.tolist()}), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     

@@ -81,7 +81,15 @@
         "content": {
           "application/json": {
             "schema": {
-              "$ref": "#/components/schemas/predictStockPriceRequest"
+              "type": "object",
+              "properties": {
+                "data_type": {
+                  "type": "string",
+                  "description": "The type of the data used for stock price prediction.",
+                  "enum": ["open_prices", "close_prices", "high_prices", "low_prices", "volume_weighted_prices"]
+                }
+              },
+              "required": ["data_type"]
             }
           }
         }

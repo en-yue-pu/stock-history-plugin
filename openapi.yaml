@@ -115,21 +115,24 @@ components:
     predictStockPriceRequest:
       type: object
       properties:
-        data:
-          type: array
-          items:
-            type: number
-          description: The feature data for stock price prediction.
+        data_type:
+          type: string
+          description: The type of the data used for stock price prediction.
+          enum: ["open_prices", "close_prices", "high_prices", "low_prices", "volume_weighted_prices"]
     predictStockPriceResponse:
       type: object
       properties:
         prediction:
           type: array
           items:
-            type: number
+            type: array
+            items:
+              type: number
           description: The predicted stock prices.
         actual:
           type: array
           items:
-            type: number
+            type: array
+            items:
+              type: number
           description: The actual stock prices.
