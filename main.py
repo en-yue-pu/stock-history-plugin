@@ -1,4 +1,5 @@
 import json
+import requests
 import quart
 import quart_cors
 from httpx import AsyncClient
@@ -36,7 +37,7 @@ async def get_stocks():
             close_prices = [result['c'] for result in data['results']]
             high_prices = [result['h'] for result in data['results']]
             low_prices = [result['l'] for result in data['results']]
-            volume_weighted_prices = [result['vm'] for result in data['results']]
+            volume_weighted_prices = [result['vw'] for result in data['results']]
 
             global previous_data
             # Save the data into a dictionary for future use
@@ -159,7 +160,7 @@ async def openapi_spec():
         return jsonify({"error": f"File '{filename}' not found"}), 404
 
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5004)#启动服务
+    app.run(debug=True, host="0.0.0.0", port=5005)#启动服务
 
 if __name__ == "__main__":
     main()
