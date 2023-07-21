@@ -1,4 +1,3 @@
-try_LSTM branchを使って下さい
 
 # 获取一个股票的一段时间内的(每天/每周...自己设定)数据
 数据可以是每天最高价/最低价/中间价等等
@@ -20,6 +19,8 @@ End of Day Data
 pip install -r requirements.txt
 python main.py
 ngrok http 5005
+# 不用ngrok也可以
+在连接plugin输入框http://localhost:5003 一定要输入完整就能安装
 
 python 3.8
 
