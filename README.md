@@ -10,13 +10,16 @@ Stocks Basic
 End of Day Data
 2 Years Historical Data
 
+预测用的数据不能太少 至少半年的数据
+否则会元祖越位
+
 # API Doc
  https://polygon.io/docs/stocks/get_v2_aggs_ticker__stocksticker__range__multiplier___timespan___from___to
 
 # Usage 
 pip install -r requirements.txt
 python main.py
-ngrok http 5003
+ngrok http 5005
 
 python 3.8
 

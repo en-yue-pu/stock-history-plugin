@@ -9,27 +9,9 @@
   },
   "api": {
     "type": "openapi",
-    "url": "https://2f70691e3ccc.ngrok.app/openapi.yaml"
+    "url": "https://a39bc55a0a73.ngrok.app/openapi.yaml"
   },
-  "logo_url": "https://2f70691e3ccc.ngrok.app/logo.jpg",
+  "logo_url": "https://a39bc55a0a73.ngrok.app/logo.jpg",
   "contact_email": "legal@example.com",
-  "legal_info_url": "http://example.com/legal",
-  "endpoints": [
-    {
-      "name": "Get Stock Aggregate",
-      "route": "/stocks",
-      "description": "Get stock aggregate data",
-      "methods": [
-        "GET"
-      ]
-    },
-    {
-      "name": "Predict Stock Price",
-      "route": "/predict",
-      "description": "Predict stock price",
-      "methods": [
-        "POST"
-      ]
-    }
-  ]
+  "legal_info_url": "http://example.com/legal"
 }

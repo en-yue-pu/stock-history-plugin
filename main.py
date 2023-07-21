@@ -2,16 +2,19 @@ import json
 import requests
 import quart
 import quart_cors
-from quart import jsonify, request, g
 from httpx import AsyncClient
+from quart import jsonify, request
 import pandas as pd
-from sklearn.linear_model import LinearRegression
+import numpy as np
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import LSTM, Dense, Dropout
+import matplotlib.pyplot as plt
 
 app = quart.Quart(__name__)
 quart_cors.cors(app, allow_origin="https://chat.openai.com") # 只允许chatgpt官方domin的访问
-    
-# 定义全局变量 临时保存数据
-g.stock_data = None
+
+previous_data = None  # 用于保存上一次的数据
 
 @app.route("/stocks", methods=['GET'])
 async def get_stocks():
@@ -28,7 +31,24 @@ async def get_stocks():
         async with AsyncClient() as client:
             response = await client.get(url)
             data = response.json()
-            g.stock_data = data  # 保存股票数据到全局变量
+
+            # Extract each type of data into separate lists
+            open_prices = [result['o'] for result in data['results']]
+            close_prices = [result['c'] for result in data['results']]
+            high_prices = [result['h'] for result in data['results']]
+            low_prices = [result['l'] for result in data['results']]
+            volume_weighted_prices = [result['vw'] for result in data['results']]
+
+            global previous_data
+            # Save the data into a dictionary for future use
+            previous_data = {
+                'open_prices': open_prices,
+                'close_prices': close_prices,
+                'high_prices': high_prices,
+                'low_prices': low_prices,
+                'volume_weighted_prices': volume_weighted_prices,
+            }
+
             return quart.Response(response=json.dumps(data), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
@@ -36,23 +56,75 @@ async def get_stocks():
 @app.route("/predict", methods=['POST'])
 async def predict_stock_price():
     try:
-        data = await request.get_json()
-        prediction_data = data['prediction_data']
+        global previous_data
+        
+        if previous_data is None:
+            return quart.Response(response=json.dumps({"error": "请先取得数据"}), status=400)
+        # 获取请求参数中的数据类型
+        data_type = (await request.json).get('data_type', 'close_prices')#默认值收盘价
+        if data_type not in previous_data:
+            return quart.Response(response=json.dumps({"error": "Invalid data type"}), status=400)
 
-        if g.stock_data is None:
-            return quart.Response(response=json.dumps({"error": "Stock data is not available"}), status=400)
+        # 使用指定类型的数据进行预测
+        feature_data = previous_data[data_type]
 
-        # 将股票数据转换为DataFrame
-        df = pd.DataFrame(g.stock_data)
+        # 将特征数据转换为DataFrame
+        df = pd.DataFrame({'feature': feature_data})
+        
+        # 将数据转换为 numpy 数组
+        data = df['feature'].values
+        # 定义训练集和测试集的大小
+        train_size = int(len(data) * 0.8)
+        test_size = len(data) - train_size
+        # 分割训练集和测试集
+        train_data = data[:train_size]
+        test_data = data[test_size:]
+        
+        scaler = MinMaxScaler()
+        # 对训练集进行归一化
+        train_data = scaler.fit_transform(train_data.reshape(-1, 1))
+        # 对测试集进行归一化
+        test_data = scaler.transform(test_data.reshape(-1, 1))
 
-        # 创建并训练线性回归模型
-        model = LinearRegression()
-        model.fit(df[['Close']], df['Prediction'])
+        # 定义一个函数，根据过去 n 天的数据来生成输入和输出
+        def create_dataset(data, n):
+            x = []
+            y = []
+            for i in range(n, len(data)):
+                x.append(data[i-n:i, 0])
+                y.append(data[i, 0])
+            return np.array(x), np.array(y)
+        
+        n = 60 # 过去天数为 60
+        
+        # 创建训练集和测试集的输入和输出
+        x_train, y_train = create_dataset(train_data, n)
+        x_test, y_test = create_dataset(test_data, n)
+        
+        # 调整输入的形状，以适应 LSTM 模型
+        x_train = x_train.reshape(x_train.shape[0], x_train.shape[1], 1)
+        x_test = x_test.reshape(x_test.shape[0], x_test.shape[1], 1)
+        
+        model = Sequential()
+        model.add(LSTM(50, return_sequences=True, input_shape=(n, 1)))
+        model.add(Dropout(0.2))
+        model.add(LSTM(50, return_sequences=True))
+        model.add(Dropout(0.2))
+        model.add(LSTM(50))
+        model.add(Dropout(0.2))
+        model.add(Dense(1))
+        
+        model.compile(loss='mean_squared_error', optimizer='adam')
+        
+        model.fit(x_train, y_train, epochs=20, batch_size=30)
+        
+        y_pred = model.predict(x_test)
+        
+        # 反归一化预测结果和真实结果
+        y_pred = scaler.inverse_transform(y_pred)
+        y_test = scaler.inverse_transform(y_test.reshape(-1, 1))
 
-        # 进行预测
-        prediction = model.predict([prediction_data['Close']])
-
-        return quart.Response(response=json.dumps({'prediction': prediction}), status=200)
+        return quart.Response(response=json.dumps({'prediction': y_pred.tolist(), 'actual': y_test.tolist()}), status=200)
     except Exception as e:
         return quart.Response(response=json.dumps({"error": str(e)}), status=400)
     
@@ -62,7 +134,7 @@ async def plugin_logo():
     try:
         return await quart.send_file(filename, mimetype='image/jpg')
     except FileNotFoundError:
-        return jsonify({"error": f"文件'{filename}'不存在"}), 404
+        return jsonify({"error": f"File '{filename}' not found"}), 404
 
 @app.get("/.well-known/ai-plugin.json")#响应读取manifest文件的请求
 async def plugin_manifest():
@@ -84,10 +156,10 @@ async def openapi_spec():
             text = f.read()
             return quart.Response(text, mimetype="text/yaml")
     except FileNotFoundError:
-        return jsonify({"error": f"文件'{filename}'不存在"}), 404
+        return jsonify({"error": f"File '{filename}' not found"}), 404
 
 def main():
-    app.run(debug=True, host="0.0.0.0", port=5003)#启动服务
+    app.run(debug=True, host="0.0.0.0", port=5005)#启动服务
 
 if __name__ == "__main__":
     main()
